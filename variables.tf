@@ -7,7 +7,6 @@ variable "name" {
 variable "database_name" {
   description = "Name of AWS Glue database to create table in"
   type        = string
-  default     = "s3_access_logs_db"
 }
 
 variable "location" {
