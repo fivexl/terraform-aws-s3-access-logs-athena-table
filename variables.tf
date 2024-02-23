@@ -4,6 +4,12 @@ variable "name" {
   default     = "s3_access_logs"
 }
 
+variable "include_region_in_table_name" {
+  description = "Whether to include the region in the table name"
+  type        = bool
+  default     = true
+}
+
 variable "database_name" {
   description = "Name of AWS Glue database to create table in"
   type        = string

@@ -1,4 +1,7 @@
 locals {
+  kebab_case_region = replace(data.aws_region.current.name, "-", "_") # kebab-case to snake_case
+  glue_table_name = var.include_region_in_table_name ? "${var.name}_${local.kebab_case_region}" : var.name
+
   columns = [
     { name = "bucketowner", type = "string" },
     { name = "bucket_name", type = "string" },
@@ -61,46 +64,33 @@ locals {
     "storage.location.template" = "${var.location}/$${accountid}/$${region}/$${bucket}/$${year}/$${month}/$${day}/"
   }
 }
-resource "aws_glue_catalog_table" "this" {
-  name          = var.name
-  database_name = var.database_name
-  owner         = "hadoop"
-  table_type    = "EXTERNAL_TABLE"
 
-  parameters = merge(
-    local.parameters,
-    var.date_based_partitioning ? local.projection_parameters : {}
-  )
+module "table"{
+    source = "./modules/aws_glue_catalog_table"
 
-  storage_descriptor {
-    location          = var.location
-    input_format      = "org.apache.hadoop.mapred.TextInputFormat"
-    output_format     = "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
-    number_of_buckets = -1
+    name = local.glue_table_name
+    database_name = var.database_name
+    owner = "hadoop"
+    table_type = "EXTERNAL_TABLE"
 
-    ser_de_info {
-      serialization_library = "org.apache.hadoop.hive.serde2.RegexSerDe"
-      parameters = {
-        "input.regex"          = "([^ ]*) ([^ ]*) \\[(.*?)\\] ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) (\"[^\"]*\"|-) (-|[0-9]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) (\"[^\"]*\"|-) ([^ ]*)(?: ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*))?.*$"
-        "serialization.format" = "1"
-      }
+    parameters = merge(
+      local.parameters,
+      var.date_based_partitioning ? local.projection_parameters : {}
+    )
+    partition_keys = local.partition_keys
+    storage_descriptor = {
+        columns = local.columns,
+        location = var.location,
+        input_format = "org.apache.hadoop.mapred.TextInputFormat",
+        output_format = "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+        compressed = false,
+        number_of_buckets = -1,
+        ser_de_info = {
+            serialization_library = "org.apache.hadoop.hive.serde2.RegexSerDe",
+            parameters = {
+                "serialization.format": "1",
+                "input.regex": "([^ ]*) ([^ ]*) \\[(.*?)\\] ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) (\"[^\"]*\"|-) (-|[0-9]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) (\"[^\"]*\"|-) ([^ ]*)(?: ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*))?.*$"
+            }
+        },
     }
-
-    dynamic "columns" {
-      for_each = local.columns
-      content {
-        name    = columns.value.name
-        type    = columns.value.type
-        comment = try(columns.value.comment, null)
-      }
-    }
-  }
-  dynamic "partition_keys" {
-    for_each = local.partition_keys
-    content {
-      name    = partition_keys.value.name
-      type    = partition_keys.value.type
-      comment = try(partition_keys.value.comment, null)
-    }
-  }
 }

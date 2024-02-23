@@ -1,9 +1,9 @@
 output "aws_glue_catalog_table_arn" {
   description = "The ARN of the Glue Table."
-  value       = aws_glue_catalog_table.this.arn
+  value = module.table.arn
 }
 
 output "aws_glue_catalog_table_id" {
   description = "The ID of the Glue Table."
-  value       = aws_glue_catalog_table.this.id
+  value = module.table.id
 }
