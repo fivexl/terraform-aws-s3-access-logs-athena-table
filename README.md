@@ -63,3 +63,7 @@ module "s3_access_logs_glue_table" {
 
 ---
 [^1]: [Amazon S3 server access logging now supports automatic date-based partitioning](https://aws.amazon.com/about-aws/whats-new/2023/11/amazon-s3-server-access-logging-date-partitioning/)
+
+## Weekly review link
+- [Review](https://github.com/fivexl/terraform-aws-s3-access-logs-athena-table/compare/main@%7B7day%7D...main)
+- [Review branch-based review](https://github.com/fivexl/terraform-aws-s3-access-logs-athena-table/compare/review...main)
